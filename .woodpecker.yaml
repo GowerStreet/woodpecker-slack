@@ -37,6 +37,7 @@ steps:
   
   slack-failure:
     image: gowerstreet/slack:latest
+    pull: true
     settings:
       status: failure
       description: "Slack plugin for Woodpecker"

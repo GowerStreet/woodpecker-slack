@@ -7,6 +7,7 @@ Use in `.woodpecker.yaml` as follows:
 ```yaml
   slack-failure:
     image: gowerstreet/slack:latest
+    pull: true
     settings:
       status: failure
       description: "Slack plugin for Woodpecker"
@@ -17,6 +18,7 @@ Use in `.woodpecker.yaml` as follows:
 
   slack-release:
     image: gowerstreet/slack:latest
+    pull: true
     settings:
       status: success
       description: "Slack plugin for Woodpecker"
