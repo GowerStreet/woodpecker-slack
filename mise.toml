@@ -44,7 +44,7 @@ env.CI_PIPELINE_URL = "http://ci.gower.st/repos/120935/pipeline/18"
 depends = ["docker:build"]
 depends_post = ["docker:remove-env"]
 run = ["env | grep -E '^(CI_|PLUGIN_)' > docker.env",
-       "docker run --env-file docker.env gowerstreet/slack:1.0.22"]
+       "docker run --env-file docker.env gowerstreet/slack:local"]
 
 
 [env]
