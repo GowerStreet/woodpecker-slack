@@ -5,7 +5,7 @@ Woodpecker plugin for sending Slack notifications cloned from: https://github.co
 Use in `.woodpecker.yaml` as follows:
 
 ```yaml
-  slack:
+  slack-failure:
     image: gowerstreet/slack:latest
     settings:
       status: failure
@@ -15,8 +15,8 @@ Use in `.woodpecker.yaml` as follows:
     when:
       status: failure
 
-  slack:
-    image: gowerstreet/slack:${CI_PIPELINE_NUMBER}
+  slack-release:
+    image: gowerstreet/slack:latest
     settings:
       status: success
       description: "Slack plugin for Woodpecker"

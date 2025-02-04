@@ -35,7 +35,7 @@ steps:
         - linux/amd64
 
   
-  slack:
+  slack-failure:
     image: gowerstreet/slack:latest
     settings:
       status: failure
@@ -45,7 +45,7 @@ steps:
     when:
       status: failure
 
-  slack:
+  slack-release:
     image: gowerstreet/slack:${CI_PIPELINE_NUMBER}
     settings:
       status: success
