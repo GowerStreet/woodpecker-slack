@@ -7,6 +7,8 @@ steps:
     pull: true
     environment:
       CGO_ENABLED: 0
+      GOOS: "linux"
+      GOARCH: "amd64"
     commands:
       - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
       - golangci-lint version
@@ -18,7 +20,7 @@ steps:
   #  commands:
   #    - go test -cover ./...
 
-  publish-standalone-cleaner-image:
+  publish:
     image: woodpeckerci/plugin-docker-buildx
     settings:
       username:
