@@ -7,6 +7,8 @@ steps:
     pull: true
     environment:
       CGO_ENABLED: 0
+      GOOS: "linux"
+      GOARCH: "amd64"
     commands:
       - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
       - golangci-lint version
@@ -18,7 +20,7 @@ steps:
   #  commands:
   #    - go test -cover ./...
 
-  publish-standalone-cleaner-image:
+  publish:
     image: woodpeckerci/plugin-docker-buildx
     settings:
       username:
@@ -28,7 +30,7 @@ steps:
       repo: gowerstreet/slack
       tags:
         - latest
-        - "1.0.${CI_PIPELINE_NUMBER}"
+        - "${CI_PIPELINE_NUMBER}"
       platforms:
         - linux/amd64
 
@@ -37,15 +39,17 @@ steps:
     image: gowerstreet/slack:latest
     settings:
       status: failure
+      description: "Slack plugin for Woodpecker"
       webhook:
         from_secret: slack_webhook
     when:
       status: failure
 
   slack:
-    image: gowerstreet/slack:latest
+    image: gowerstreet/slack:${CI_PIPELINE_NUMBER}
     settings:
       status: success
+      description: "Slack plugin for Woodpecker"
       webhook:
         from_secret: slack_webhook
     when:
