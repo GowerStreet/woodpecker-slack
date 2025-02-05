@@ -10,7 +10,7 @@ Use in `.woodpecker.yaml` as follows:
     pull: true
     settings:
       status: failure
-      description: "Slack plugin for Woodpecker"
+      description: <description of your service or system>
       webhook:
         from_secret: slack_webhook
     when:
@@ -21,7 +21,7 @@ Use in `.woodpecker.yaml` as follows:
     pull: true
     settings:
       status: success
-      description: "Slack plugin for Woodpecker"
+      description: <description of your service or system>
       webhook:
         from_secret: slack_webhook
     when:
