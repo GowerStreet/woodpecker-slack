@@ -5,7 +5,7 @@ when:
 
 steps:
   lint-and-build:
-    image: golang:1.22
+    image: golang:1.25
     pull: true
     environment:
       CGO_ENABLED: 0

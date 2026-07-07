@@ -401,7 +401,7 @@ func (p Plugin) UploadFile() error {
 		p.Config.FileName = fileName
 	}
 
-	params := slack.UploadFileV2Parameters{
+	params := slack.UploadFileParameters{
 		File:           p.Config.FilePath,
 		Channel:        p.Config.Channel,
 		Filename:       p.Config.FileName,
@@ -410,7 +410,7 @@ func (p Plugin) UploadFile() error {
 		FileSize:       fileSize,
 	}
 
-	slackSummary, err := api.UploadFileV2(params)
+	slackSummary, err := api.UploadFile(params)
 
 	if !p.Config.FailOnError && slackSummary == nil {
 		if err != nil {
