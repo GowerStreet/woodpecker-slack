@@ -1,15 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/slack-go/slack"
 	"gotest.tools/v3/assert"
 )
 
@@ -138,7 +141,7 @@ func TestDefaultMessage(t *testing.T) {
     config := getTestConfig()
 
 	msg := message(repo, build, config)
-	expectedMessage := "*success* <http://github.com/octocat/hello-world|octocat/hello-world#7fd1a60b> (master) by octocat"
+	expectedMessage := "Success: <https://github.com/octocat/hello-world/|hello-world>/<https://github.com/octocat/hello-world/tree/master|*master*> • <http://github.com/octocat/hello-world|CI Pipeline>\n`Initial commit` by octocat@github.com"
 
 	assert.Equal(t, expectedMessage, msg)
 }
@@ -254,12 +257,16 @@ func TestFileUpload(t *testing.T) {
 		Config: cfg,
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		out, _ := io.ReadAll(r.Body)
-		got := string(out)
+	expected := message(getTestRepo(), getTestBuild(), cfg)
 
-		want := `{"attachments":[{"color":"good","fallback":"success octocat/hello-world#7fd1a60b (master) by octocat","text":"*success* \u003chttp://github.com/octocat/hello-world|octocat/hello-world#7fd1a60b\u003e (master) by octocat","mrkdwn_in":["text","fallback"],"blocks":null}],"replace_original":false,"delete_original":false}`
-		assert.Equal(t, got, want)
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var payload slack.WebhookMessage
+		err := json.NewDecoder(r.Body).Decode(&payload)
+		assert.NilError(t, err)
+		assert.Equal(t, len(payload.Attachments), 1)
+		assert.Equal(t, payload.Attachments[0].Color, "good")
+		assert.Equal(t, payload.Attachments[0].Text, expected)
+		assert.Equal(t, payload.Attachments[0].Fallback, expected)
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(handler))
@@ -271,6 +278,7 @@ func TestFileUpload(t *testing.T) {
 }
 
 func TestGetSlackIdFromEmail(t *testing.T) {
+	t.Setenv("DRONE_OUTPUT", filepath.Join(t.TempDir(), "output.env"))
 	config := Config{
 		AccessToken: "test-access-token",
 		SlackIdOf:   "octocat@github.com",
@@ -301,6 +309,7 @@ func TestGetSlackIdFromEmail(t *testing.T) {
 }
 
 func TestGetSlackIdsOfCommitters(t *testing.T) {
+	t.Setenv("DRONE_OUTPUT", filepath.Join(t.TempDir(), "output.env"))
 	config := Config{
 		AccessToken:          "mock-access-token",
 		CommitterListGitPath: "/mock/repo/path",
@@ -336,6 +345,7 @@ func TestGetSlackIdsOfCommitters(t *testing.T) {
 }
 
 func TestGetSlackIdsOfCommitters_NoCommitters(t *testing.T) {
+	t.Setenv("DRONE_OUTPUT", filepath.Join(t.TempDir(), "output.env"))
 	config := Config{
 		AccessToken:          "mock-access-token",
 		CommitterListGitPath: "/mock/repo/path",
