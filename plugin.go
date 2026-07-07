@@ -64,6 +64,8 @@ type (
 
 	Config struct {
 		Webhook        string
+		WebhookNotice  string
+		WebhookAlerts  string
 		Channel        string
 		Recipient      string
 		Username       string
@@ -341,8 +343,46 @@ func (p Plugin) Exec() error {
 		}
 	}
 
-	// Post the message with the webhook
-	return slack.PostWebhook(p.Config.Webhook, &payload)
+	// Post the message with the webhook, routed to the right channel
+	return slack.PostWebhook(p.resolveWebhook(), &payload)
+}
+
+// resolveWebhook picks the destination webhook based on the build outcome and
+// event. Failures on the default branch go to the alerts webhook; pull-request
+// failures and any successes go to the notice webhook. When the split webhooks
+// are not configured it falls back to the single Webhook, preserving the
+// previous single-channel behaviour.
+func (p Plugin) resolveWebhook() string {
+	notice := p.Config.WebhookNotice
+	alerts := p.Config.WebhookAlerts
+
+	if notice == "" && alerts == "" {
+		return p.Config.Webhook
+	}
+	if notice == "" {
+		notice = p.Config.Webhook
+	}
+	if alerts == "" {
+		alerts = p.Config.Webhook
+	}
+
+	if isFailure(p.Build.Status) && !p.isPullRequest() {
+		return alerts
+	}
+	return notice
+}
+
+func (p Plugin) isPullRequest() bool {
+	return p.Build.Pull != "" || p.Build.Event == "pull_request"
+}
+
+func isFailure(status string) bool {
+	switch strings.ToLower(status) {
+	case "failure", "error", "killed":
+		return true
+	default:
+		return false
+	}
 }
 
 func (p Plugin) UploadFile() error {

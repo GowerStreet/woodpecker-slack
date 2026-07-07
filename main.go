@@ -28,6 +28,16 @@ func main() {
 			EnvVar: "SLACK_WEBHOOK,PLUGIN_WEBHOOK",
 		},
 		cli.StringFlag{
+			Name:   "webhook.notice",
+			Usage:  "slack webhook url for notices (PR failures and successes)",
+			EnvVar: "PLUGIN_WEBHOOK_NOTICE,SLACK_WEBHOOK_NOTICE",
+		},
+		cli.StringFlag{
+			Name:   "webhook.alerts",
+			Usage:  "slack webhook url for alerts (failures on the default branch)",
+			EnvVar: "PLUGIN_WEBHOOK_ALERTS,SLACK_WEBHOOK_ALERTS",
+		},
+		cli.StringFlag{
 			Name:   "channel",
 			Usage:  "slack channel",
 			EnvVar: "PLUGIN_CHANNEL",
@@ -309,6 +319,8 @@ func run(c *cli.Context) error {
 		},
 		Config: Config{
 			Webhook:        c.String("webhook"),
+			WebhookNotice:  c.String("webhook.notice"),
+			WebhookAlerts:  c.String("webhook.alerts"),
 			Channel:        c.String("channel"),
 			Recipient:      c.String("recipient"),
 			Username:       c.String("username"),
@@ -340,7 +352,7 @@ func run(c *cli.Context) error {
 	if plugin.Build.Commit == "" {
 		plugin.Build.Commit = "0000000000000000000000000000000000000000"
 	}
-	if plugin.Config.Webhook == "" && plugin.Config.AccessToken == "" {
+	if plugin.Config.Webhook == "" && plugin.Config.WebhookNotice == "" && plugin.Config.WebhookAlerts == "" && plugin.Config.AccessToken == "" {
 		return errors.New("you must provide a webhook url or access token")
 	}
 
