@@ -1,5 +1,7 @@
 when:
-  branch: master
+  - event: push
+    branch: master
+  - event: pull_request
 
 steps:
   lint-and-build:
@@ -33,16 +35,19 @@ steps:
         - "${CI_PIPELINE_NUMBER}"
       platforms:
         - linux/amd64
+    when:
+      event: push
+      branch: master
 
-  
+  # Webhook URLs come from the server's WOODPECKER_ENVIRONMENT
+  # (SLACK_WEBHOOK_NOTICE / SLACK_WEBHOOK_ALERTS). The plugin routes failures
+  # itself: pull-request failures go to notice, default-branch failures to alerts.
   slack-failure:
     image: gowerstreet/slack:latest
     pull: true
     settings:
       status: failure
       description: "Slack plugin for Woodpecker"
-      webhook:
-        from_secret: slack_webhook
     when:
       status: failure
 
@@ -51,8 +56,6 @@ steps:
     settings:
       status: success
       description: "Slack plugin for Woodpecker"
-      webhook:
-        from_secret: slack_webhook
     when:
       event: push
       branch: master

@@ -35,6 +35,63 @@ func TestExec(t *testing.T) {
 	_ = plugin.Exec()
 }
 
+func TestResolveWebhook(t *testing.T) {
+	const (
+		single = "https://hooks.slack/single"
+		notice = "https://hooks.slack/notice"
+		alerts = "https://hooks.slack/alerts"
+	)
+
+	testCases := map[string]struct {
+		config Config
+		build  Build
+		want   string
+	}{
+		"pr failure goes to notice": {
+			config: Config{WebhookNotice: notice, WebhookAlerts: alerts},
+			build:  Build{Status: "failure", Event: "pull_request", Pull: "42"},
+			want:   notice,
+		},
+		"master failure goes to alerts": {
+			config: Config{WebhookNotice: notice, WebhookAlerts: alerts},
+			build:  Build{Status: "failure", Event: "push", Branch: "master"},
+			want:   alerts,
+		},
+		"master success goes to notice": {
+			config: Config{WebhookNotice: notice, WebhookAlerts: alerts},
+			build:  Build{Status: "success", Event: "push", Branch: "master"},
+			want:   notice,
+		},
+		"pr success goes to notice": {
+			config: Config{WebhookNotice: notice, WebhookAlerts: alerts},
+			build:  Build{Status: "success", Event: "pull_request", Pull: "42"},
+			want:   notice,
+		},
+		"error status treated as failure": {
+			config: Config{WebhookNotice: notice, WebhookAlerts: alerts},
+			build:  Build{Status: "error", Event: "push", Branch: "master"},
+			want:   alerts,
+		},
+		"only single webhook set falls back": {
+			config: Config{Webhook: single},
+			build:  Build{Status: "failure", Event: "push", Branch: "master"},
+			want:   single,
+		},
+		"missing alerts falls back to single": {
+			config: Config{Webhook: single, WebhookNotice: notice},
+			build:  Build{Status: "failure", Event: "push", Branch: "master"},
+			want:   single,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			p := Plugin{Config: tc.config, Build: tc.build}
+			assert.Equal(t, p.resolveWebhook(), tc.want)
+		})
+	}
+}
+
 func TestNewCommitMessage(t *testing.T) {
 	testCases := map[string]struct {
 		Msg    string
