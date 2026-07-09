@@ -2,12 +2,16 @@
 
 Woodpecker plugin for sending Slack notifications cloned from: https://github.com/drone-plugins/drone-slack
 
+There is no published Docker image for this plugin — build your own and push it to a
+registry your Woodpecker agents can pull from (see [Docker](#docker)), then reference
+that image in your pipeline.
+
 The webhook URLs are provided once, globally, via the server's `WOODPECKER_ENVIRONMENT`
 (see [Channel routing](#channel-routing)), so pipelines don't reference any secret:
 
 ```yaml
   slack-failure:
-    image: gowerstreet/slack:latest
+    image: <your-registry>/woodpecker-slack:latest
     pull: true
     settings:
       status: failure
@@ -16,7 +20,7 @@ The webhook URLs are provided once, globally, via the server's `WOODPECKER_ENVIR
       status: failure
 
   slack-release:
-    image: gowerstreet/slack:latest
+    image: <your-registry>/woodpecker-slack:latest
     pull: true
     settings:
       status: success
@@ -71,6 +75,7 @@ This will produce a file called `drone-slack` in your root directory.
 
 ## Docker
 
+There is no image published to a public registry, so you need to build and host your own.
 Build the Docker image and test-run it:
 
 ```
@@ -78,3 +83,19 @@ mise docker:run
 ```
 
 This will produce docker image `gowerstreet/slack:local` and run it with a few test variables. You should be able to see the output in the `#alerts` slack channel.
+
+To use the plugin in your pipelines, tag the image for a registry your Woodpecker agents
+can pull from and push it there:
+
+```
+docker tag gowerstreet/slack:local <your-registry>/woodpecker-slack:latest
+docker push <your-registry>/woodpecker-slack:latest
+```
+
+Alternatively, build without mise:
+
+```
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo -ldflags '-w' .
+docker build --rm -t <your-registry>/woodpecker-slack:latest .
+docker push <your-registry>/woodpecker-slack:latest
+```
