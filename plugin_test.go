@@ -160,6 +160,28 @@ func TestDefaultMessageFailure(t *testing.T) {
 	assert.Equal(t, expectedMessage, msg)
 }
 
+func TestDefaultMessageAuthorFallsBackToUsername(t *testing.T) {
+	// Woodpecker doesn't set CI_COMMIT_AUTHOR_EMAIL on every event; the byline
+	// must fall back to the username rather than render a dangling "by ".
+	repo := getTestRepo()
+	build := getTestBuild()
+	build.Author.Email = ""
+    config := getTestConfig()
+
+	msg := message(repo, build, config)
+	assert.Equal(t, true, strings.HasSuffix(msg, "`Initial commit` by octocat"))
+}
+
+func TestDefaultMessageNoAuthorOmitsByline(t *testing.T) {
+	repo := getTestRepo()
+	build := getTestBuild()
+	build.Author = Author{}
+    config := getTestConfig()
+
+	msg := message(repo, build, config)
+	assert.Equal(t, true, strings.HasSuffix(msg, "`Initial commit`"))
+}
+
 func TestMessageFileContents(t *testing.T) {
 	// Missing file: skip silently.
 	_, skip, err := messageFileContents("/nonexistent/announce.txt")

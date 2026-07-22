@@ -571,14 +571,29 @@ func message(repo Repo, build Build, config Config) string {
 		description = fmt.Sprintf("%s • ", config.Description)
 	}
 
-    return fmt.Sprintf("%s: %s/%s • %s<%s|CI Pipeline>\n`%s` by %s",
+	// Woodpecker doesn't populate CI_COMMIT_AUTHOR_EMAIL on every event, which
+	// used to leave messages ending in a dangling "by ". Fall back through the
+	// author fields and drop the byline entirely when none is set.
+	author := build.Author.Email
+	if author == "" {
+		author = build.Author.Username
+	}
+	if author == "" {
+		author = build.Author.Name
+	}
+	byline := ""
+	if author != "" {
+		byline = fmt.Sprintf(" by %s", author)
+	}
+
+    return fmt.Sprintf("%s: %s/%s • %s<%s|CI Pipeline>\n`%s`%s",
         status,
         repoName,
         repoLink,
         description,
 		build.Link,
         build.Message.Title,
-		build.Author.Email,
+		byline,
 	)
 }
 
