@@ -227,6 +227,11 @@ func main() {
 			Usage:  "slack message. either this or the custom template must be set. ",
 			EnvVar: "PLUGIN_MESSAGE",
 		},
+		cli.StringFlag{
+			Name:   "message.file",
+			Usage:  "read the slack message from this file (written by an earlier pipeline step). If the file is missing or blank, send nothing and exit successfully — lets a step announce only when there is something to announce.",
+			EnvVar: "PLUGIN_MESSAGE_FILE",
+		},
 
 		// File send params
 		cli.StringFlag{
@@ -336,6 +341,7 @@ func run(c *cli.Context) error {
 			Mentions:       c.String("mentions"),
 			CustomTemplate: c.String("custom.template"),
 			Message:        c.String("message"),
+			MessageFile:    c.String("message.file"),
 			// File upload attributes
 			FilePath:             c.String("filepath"),
 			FileName:             c.String("filename"),

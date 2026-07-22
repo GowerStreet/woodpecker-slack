@@ -63,6 +63,26 @@ The success/failure split still has to come from each pipeline's `when: status:`
 conditions — Woodpecker 3.x removed `CI_PIPELINE_STATUS`, so the plugin cannot detect
 failure on its own. Only the channel choice lives in the plugin.
 
+## Dynamic messages from a file (`message_file`)
+
+Plugin `settings:` are static YAML, so a message whose content is computed at
+runtime (e.g. "which versions did this deploy actually include?") can't be
+passed via `message:`. Instead, have an earlier step write the message to a
+file in the workspace and point the plugin at it:
+
+```yaml
+  announce-deploy:
+    image: gowerstreet/slack:latest
+    settings:
+      message_file: deploy-announcement.txt
+```
+
+The file content is sent verbatim (Slack mrkdwn works, e.g. `<url|text>`
+links). If the file is **missing or blank, the step succeeds silently and
+sends nothing** — so a pipeline run that had nothing to announce (e.g. a no-op
+deploy) stays quiet without any conditional logic in the pipeline. Channel
+routing applies as above (successes go to `SLACK_WEBHOOK_NOTICE`).
+
 ## Build
 
 Build the binary with the following commands:
