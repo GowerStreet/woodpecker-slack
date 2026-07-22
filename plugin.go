@@ -81,6 +81,7 @@ type (
 		Mentions       string
 		CustomTemplate string
 		Message        string
+		MessageFile    string
 		// File Upload attributes
 		FilePath       string
 		FileName       string
@@ -152,7 +153,19 @@ func (p Plugin) Exec() error {
 	}
 
 	// Determine the message and fallback
-	if p.Config.Template != "" {
+	if p.Config.MessageFile != "" {
+		content, skip, err := messageFileContents(p.Config.MessageFile)
+		if err != nil {
+			return err
+		}
+		if skip {
+			// Nothing to announce (file absent or blank — e.g. a no-op deploy
+			// run that didn't produce an announcement). Succeed silently.
+			log.Printf("message file %q missing or empty; nothing to send", p.Config.MessageFile)
+			return nil
+		}
+		text = content
+	} else if p.Config.Template != "" {
 		var err error
 		text, err = templateMessage(p.Config.Template, p)
 		if err != nil {
@@ -508,6 +521,24 @@ func templateMessage(t string, plugin Plugin) (string, error) {
 	return template.RenderTrim(c, plugin)
 }
 
+// messageFileContents reads the announcement text produced by an earlier
+// pipeline step. skip=true (with no error) when the file doesn't exist or is
+// blank — the step has nothing to announce and should succeed silently.
+func messageFileContents(path string) (text string, skip bool, err error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", true, nil
+		}
+		return "", false, err
+	}
+	content := strings.TrimSpace(string(data))
+	if content == "" {
+		return "", true, nil
+	}
+	return content, false, nil
+}
+
 func message(repo Repo, build Build, config Config) string {
 	var repoLink string
     var status string
@@ -520,7 +551,14 @@ func message(repo Repo, build Build, config Config) string {
 	} else {
         branch = fmt.Sprintf("*%s*", build.Branch)
         repoLink = fmt.Sprintf("<https://github.com/%s/%s/tree/%s|%s>", repo.Owner, repo.Name, build.Branch, branch)
-        if build.Status == "Success" {
+        // "Releasing", not "deployed": a successful branch pipeline means the
+        // merge landed and (for service repos) a deployerer bump was pushed —
+        // the authoritative "live in prod" announcement is posted by
+        // deployerer's deploy pipeline after its convergence check. Note:
+        // PLUGIN_STATUS arrives lowercase, so the previous `== "Success"`
+        // comparison never matched and "Releasing" was dead code — real
+        // messages read "Success: ...". EqualFold makes it actually fire.
+        if strings.EqualFold(build.Status, "success") {
             status = "Releasing"
         } else {
             status = cases.Title(language.Und).String(build.Status)

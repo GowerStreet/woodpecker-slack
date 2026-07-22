@@ -141,9 +141,45 @@ func TestDefaultMessage(t *testing.T) {
     config := getTestConfig()
 
 	msg := message(repo, build, config)
-	expectedMessage := "Success: <https://github.com/octocat/hello-world/|hello-world>/<https://github.com/octocat/hello-world/tree/master|*master*> • <http://github.com/octocat/hello-world|CI Pipeline>\n`Initial commit` by octocat@github.com"
+	// PLUGIN_STATUS arrives lowercase; the case-insensitive comparison must
+	// fire the "Releasing" wording (it was dead code before).
+	expectedMessage := "Releasing: <https://github.com/octocat/hello-world/|hello-world>/<https://github.com/octocat/hello-world/tree/master|*master*> • <http://github.com/octocat/hello-world|CI Pipeline>\n`Initial commit` by octocat@github.com"
 
 	assert.Equal(t, expectedMessage, msg)
+}
+
+func TestDefaultMessageFailure(t *testing.T) {
+	repo := getTestRepo()
+	build := getTestBuild()
+	build.Status = "failure"
+    config := getTestConfig()
+
+	msg := message(repo, build, config)
+	expectedMessage := "Failure: <https://github.com/octocat/hello-world/|hello-world>/<https://github.com/octocat/hello-world/tree/master|*master*> • <http://github.com/octocat/hello-world|CI Pipeline>\n`Initial commit` by octocat@github.com"
+
+	assert.Equal(t, expectedMessage, msg)
+}
+
+func TestMessageFileContents(t *testing.T) {
+	// Missing file: skip silently.
+	_, skip, err := messageFileContents("/nonexistent/announce.txt")
+	assert.NilError(t, err)
+	assert.Equal(t, true, skip)
+
+	// Blank file: skip silently.
+	blank := t.TempDir() + "/blank.txt"
+	assert.NilError(t, os.WriteFile(blank, []byte("  \n\t\n"), 0o644))
+	_, skip, err = messageFileContents(blank)
+	assert.NilError(t, err)
+	assert.Equal(t, true, skip)
+
+	// Content: returned trimmed, no skip.
+	msgFile := t.TempDir() + "/announce.txt"
+	assert.NilError(t, os.WriteFile(msgFile, []byte("Deployment Successful • <http://ci|CI Pipeline>\n• line\n"), 0o644))
+	text, skip, err := messageFileContents(msgFile)
+	assert.NilError(t, err)
+	assert.Equal(t, false, skip)
+	assert.Equal(t, "Deployment Successful • <http://ci|CI Pipeline>\n• line", text)
 }
 
 
